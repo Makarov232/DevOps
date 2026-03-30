@@ -4,7 +4,9 @@ on:
   pull_request:
     branches:
       - dev  # Запуск при создании PR в ветку dev
-
+    # Фильтр для веток feature/ticket-***
+    branches-ignore:
+      - '*'
     # Используем типы событий, чтобы срабатывало корректно
     types: [opened, synchronize, reopened]
 
