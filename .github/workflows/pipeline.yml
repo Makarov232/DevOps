@@ -2,18 +2,12 @@ name: Feature Branch CI Pipeline
 
 on:
   pull_request:
-    branches:
-      - dev  # Запуск при создании PR в ветку dev
-    # Фильтр для веток feature/ticket-***
-    branches-ignore:
-      - '*'
-    # Используем типы событий, чтобы срабатывало корректно
+    branches: [dev]  # Только PR в dev
     types: [opened, synchronize, reopened]
 
 jobs:
   quality-check:
-    # Запуск только если ветка соответствует шаблону feature/ticket-***
-    if: startsWith(github.head_ref, 'feature/ticket-')
+    if: startsWith(github.head_ref, 'feature/ticket-')  # Только нужные ветки
     runs-on: ubuntu-latest
     
     steps:
