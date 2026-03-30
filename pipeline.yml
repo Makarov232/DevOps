@@ -1,0 +1,61 @@
+name: Feature Branch CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - dev  # Запуск при создании PR в ветку dev
+    # Фильтр для веток feature/ticket-***
+    branches-ignore:
+      - '*'
+    # Используем типы событий, чтобы срабатывало корректно
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quality-check:
+    # Запуск только если ветка соответствует шаблону feature/ticket-***
+    if: startsWith(github.head_ref, 'feature/ticket-')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        # Шаг проверки качества кода
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Upload Report Artifact
+        # Формирование и выгрузка отчета как артефакта
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-report
+          path: sonar-report.json # Или другой путь к отчету
+
+      - name: Send Telegram Notification
+        # Шаг уведомления с основной информацией
+        if: always() # Уведомление придет даже если тесты упали
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            *ITHUB_DEVOPS_BOT*
+            🚀 *Новый выпуск изменений*
+            *Проект:* ${{ github.event.repository.name }}
+            *Версия/Ветка:* `${{ github.head_ref }}`
+            *Дата:* ${{ github.event.pull_request.updated_at }}
+            
+            *Информация о Git-репозитории*
+            *Ветка замержена:* `${{ github.head_ref }}` в `${{ github.base_ref }}`
+            *Релиз (TAG):* `${{ github.event.pull_request.head.sha }}`
+            *Ссылка на PR:* [Открыть Pull Request](${{ github.event.pull_request.html_url }})
+            *Репозиторий:* [GitHub Link](${{ github.github_url }}/${{ github.repository }})
+            
+            *Статус проверки:* ${{ job.status == 'success' && '✅ Пройдено' || '❌ Ошибка' }}
+            Приветствуется читабельность и фидбек! 🤖
